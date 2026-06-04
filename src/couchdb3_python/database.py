@@ -178,3 +178,37 @@ class Database:
         path = f"{self.name}/_index"
         return self.client.post(path, json=payload)
 
+    def create_design_doc(self, name: str, views: dict):
+        """
+        Design Document を作成または更新する。
+        name: デザイン名（例: "users" → _design/users）
+        views: {
+            "by_age": {
+                "map": "function(doc){ emit(doc.age, doc); }",
+                "reduce": "_count"
+            }
+        }
+        """
+        doc_id = f"_design/{name}"
+        payload = {
+            "_id": doc_id,
+            "views": views
+        }
+
+        # 既存の _rev を取得して更新に対応
+        try:
+            existing = self.get(doc_id)
+            payload["_rev"] = existing["_rev"]
+        except Exception:
+            pass  # 新規作成
+
+        return self.put(doc_id, json=payload)
+
+    def query_view(self, design: str, view: str, params: dict | None = None):
+        """
+        MapReduce View の実行
+        GET /{db}/_design/{design}/_view/{view}
+        """
+        path = f"{self.name}/_design/{design}/_view/{view}"
+        return self.client.get(path, params=params)
+
