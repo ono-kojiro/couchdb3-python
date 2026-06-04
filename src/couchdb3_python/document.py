@@ -80,3 +80,20 @@ class Document:
             self.data["_rev"] = self.rev
 
         return resp
+
+    def update(self, fields: dict):
+        """
+        部分更新:
+        - 最新のドキュメントを取得
+        - 指定された fields をマージ
+        - save() で _rev を自動更新して PUT
+        """
+        # 最新状態を取得
+        self.fetch()
+
+        # 差分をマージ
+        self.data.update(fields)
+
+        # 保存（_rev 自動更新）
+        return self.save()
+
