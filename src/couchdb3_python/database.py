@@ -38,6 +38,9 @@ class Database:
         except NotFoundError:
             return False
 
+    def put(self, docid, json):
+        return self.client.put(f"{self.name}/{docid}", json=json)
+
     # ---------------------------
     # 拡張 API
     # ---------------------------

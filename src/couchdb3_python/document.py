@@ -8,10 +8,12 @@ class Document:
     まずは基本的な CRUD のみを実装する。
     """
 
-    def __init__(self, client: Client, dbname: str, doc_id: str):
+    def __init__(self, client, dbname, docid, data=None):
         self.client = client
         self.dbname = dbname
-        self.id = doc_id
+        self.id = docid
+        self.data = data or {}
+        self.rev = self.data.get("_rev")
 
     # ---------------------------
     # URL 生成
@@ -57,3 +59,24 @@ class Document:
         path = f"{self.dbname}/{self.id}?rev={rev}"
         return self.client.delete(path)
 
+    def fetch(self):
+        resp = self.client.get(f"{self.dbname}/{self.id}")
+        self.data = resp
+        self.rev = resp.get("_rev")
+        return self
+
+    def save(self):
+        self.data["_id"] = self.id
+
+        if self.rev:
+            self.data["_rev"] = self.rev
+        else:
+            self.data.pop("_rev", None)
+
+        resp = self.client.put(f"{self.dbname}/{self.id}", json=self.data)
+
+        if "rev" in resp:
+            self.rev = resp["rev"]
+            self.data["_rev"] = self.rev
+
+        return resp
