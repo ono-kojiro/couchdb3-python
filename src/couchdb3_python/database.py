@@ -115,3 +115,11 @@ class Database:
         from urllib.parse import urlencode
         return "?" + urlencode(params)
 
+    def bulk(self, docs: list):
+        """
+        Bulk API: _bulk_docs による一括 insert/update
+        docs は dict のリスト（_id, _rev を含んでいてもよい）
+        """
+        payload = {"docs": docs}
+        return self.client.post(f"{self.name}/_bulk_docs", json=payload)
+
