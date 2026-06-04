@@ -134,4 +134,19 @@ class Database:
         path = f"{self.name}/_changes"
         return self.client.get(path, params=params)
 
+    def longpoll(self, since: int | str = "now", params: dict | None = None):
+        """
+        Longpoll モードの Changes API:
+        GET /{db}/_changes?feed=longpoll&since=xxx
+
+        since: どこから変更を取得するか（通常は last_seq）
+        params: include_docs, limit など追加パラメータ
+        """
+        query = {"feed": "longpoll", "since": since}
+
+        if params:
+            query.update(params)
+
+        path = f"{self.name}/_changes"
+        return self.client.get(path, params=query)
 
