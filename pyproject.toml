@@ -9,6 +9,7 @@ packages = [{include = "couchdb3_python", from = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.14"
+python-dotenv = "^1.2.2"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
