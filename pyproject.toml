@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "couchdb3-python"
+version = "0.1.0"
+description = ""
+authors = [ "Kojiro ONO <ono.kojiro@gmail.com>" ]
+readme = "README.md"
+
+packages = [{include = "couchdb3_python", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.14"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.3,<10.0.0)"
+]
