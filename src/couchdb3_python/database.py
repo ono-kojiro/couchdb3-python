@@ -150,3 +150,31 @@ class Database:
         path = f"{self.name}/_changes"
         return self.client.get(path, params=query)
 
+    def find(self, query: dict):
+        """
+        Mango Query (_find)
+        POST /{db}/_find
+        query: {"selector": {...}, "limit": 10, ...}
+        """
+        path = f"{self.name}/_find"
+        return self.client.post(path, json=query)
+
+    def create_index(self, fields: list, name: str | None = None, index_type: str = "json"):
+        """
+        Mango Index 作成
+        POST /{db}/_index
+
+        fields: ["age", "name"] のようなフィールドリスト
+        name: インデックス名（省略可）
+        index_type: "json" または "text"
+        """
+        payload = {
+            "index": {"fields": fields},
+            "type": index_type,
+        }
+        if name:
+            payload["name"] = name
+
+        path = f"{self.name}/_index"
+        return self.client.post(path, json=payload)
+
