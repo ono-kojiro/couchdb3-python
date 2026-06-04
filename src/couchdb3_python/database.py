@@ -212,3 +212,67 @@ class Database:
         path = f"{self.name}/_design/{design}/_view/{view}"
         return self.client.get(path, params=params)
 
+    def create_design_doc(self, name: str, views: dict | None = None,
+                          shows: dict | None = None,
+                          lists: dict | None = None,
+                          updates: dict | None = None):
+        """
+        Design Document を作成または更新する。
+        name: デザイン名（例: "users" → _design/users）
+        views: {"by_age": {"map": "...", "reduce": "..."}}
+        shows: {"showname": "function(doc, req){ ... }"}
+        lists: {"listname": "function(head, req){ ... }"}
+        updates: {"updatename": "function(doc, req){ ... }"}
+        """
+        doc_id = f"_design/{name}"
+
+        payload = {"_id": doc_id}
+
+        if views:
+            payload["views"] = views
+        if shows:
+            payload["shows"] = shows
+        if lists:
+            payload["lists"] = lists
+        if updates:
+            payload["updates"] = updates
+
+        # 既存の _rev を取得して更新に対応
+        try:
+            existing = self.get(doc_id)
+            payload["_rev"] = existing["_rev"]
+        except Exception:
+            pass  # 新規作成
+
+        return self.put(doc_id, json=payload)
+
+    def show(self, design: str, show: str, docid: str, params: dict | None = None):
+        """
+        Show handler の実行
+        GET /{db}/_design/{design}/_show/{show}/{docid}
+        """
+        path = f"{self.name}/_design/{design}/_show/{show}/{docid}"
+        return self.client.get(path, params=params)
+
+    def list(self, design: str, listname: str, view: str, params: dict | None = None):
+        """
+        List handler の実行
+        GET /{db}/_design/{design}/_list/{listname}/{view}
+        """
+        path = f"{self.name}/_design/{design}/_list/{listname}/{view}"
+        return self.client.get(path, params=params)
+
+    def update(self, design: str, update: str, docid: str | None = None, body: dict | None = None):
+        """
+        Update handler の実行
+        POST /{db}/_design/{design}/_update/{update}/{docid}
+
+        body: 任意の JSON（req.body として渡される）
+        """
+        if docid:
+            path = f"{self.name}/_design/{design}/_update/{update}/{docid}"
+        else:
+            path = f"{self.name}/_design/{design}/_update/{update}"
+
+        return self.client.post(path, json=body)
+
