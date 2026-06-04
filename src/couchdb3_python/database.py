@@ -123,3 +123,15 @@ class Database:
         payload = {"docs": docs}
         return self.client.post(f"{self.name}/_bulk_docs", json=payload)
 
+    def changes(self, params: dict | None = None):
+        """
+        Normal モードの Changes API:
+        GET /{db}/_changes
+
+        params には since, limit, include_docs などを指定可能。
+        例: db.changes({"since": 10})
+        """
+        path = f"{self.name}/_changes"
+        return self.client.get(path, params=params)
+
+

@@ -40,9 +40,9 @@ class Client:
     # 基本 HTTP メソッド
     # ---------------------------
 
-    def get(self, path: str):
+    def get(self, path: str, params=None):
         url = self.url(path)
-        resp = self._client.get(url)
+        resp = self._client.get(url, params=params)
         return self._handle_response(resp, url)
 
     def put(self, path: str, json=None):
