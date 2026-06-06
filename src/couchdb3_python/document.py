@@ -3,64 +3,37 @@ from .exceptions import NotFoundError
 
 
 class Document:
-    """
-    CouchDB のドキュメントを表すクラス。
-    まずは基本的な CRUD のみを実装する。
-    """
-
-    def __init__(self, client, dbname, docid, data=None):
+    def __init__(self, client: Client, dbname: str, docid: str, data=None):
         self.client = client
         self.dbname = dbname
         self.id = docid
         self.data = data or {}
         self.rev = self.data.get("_rev")
 
-    # ---------------------------
-    # URL 生成
-    # ---------------------------
+    def _path(self) -> str:
+        return f"{self.dbname}/{self.id}"
 
     def url(self) -> str:
-        return self.client.url(f"{self.dbname}/{self.id}")
-
-    # ---------------------------
-    # CRUD 操作
-    # ---------------------------
+        return self.client.url(self._path())
 
     def get(self) -> dict:
-        """
-        ドキュメントを取得する。
-        GET /{db}/{id}
-        """
-        return self.client.get(f"{self.dbname}/{self.id}")
+        return self.client.get(self._path())
 
     def exists(self) -> bool:
-        """
-        ドキュメントが存在するか確認する。
-        HEAD /{db}/{id}
-        """
         try:
-            self.client.head(f"{self.dbname}/{self.id}")
+            self.client.head(self._path())
             return True
         except NotFoundError:
             return False
 
     def create(self, data: dict) -> dict:
-        """
-        ドキュメントを新規作成する。
-        PUT /{db}/{id}
-        """
-        return self.client.put(f"{self.dbname}/{self.id}", json=data)
+        return self.client.put(self._path(), json=data)
 
     def delete(self, rev: str) -> dict:
-        """
-        ドキュメントを削除する。
-        DELETE /{db}/{id}?rev={rev}
-        """
-        path = f"{self.dbname}/{self.id}?rev={rev}"
-        return self.client.delete(path)
+        return self.client.delete(f"{self._path()}?rev={rev}")
 
     def fetch(self):
-        resp = self.client.get(f"{self.dbname}/{self.id}")
+        resp = self.client.get(self._path())
         self.data = resp
         self.rev = resp.get("_rev")
         return self
@@ -73,7 +46,7 @@ class Document:
         else:
             self.data.pop("_rev", None)
 
-        resp = self.client.put(f"{self.dbname}/{self.id}", json=self.data)
+        resp = self.client.put(self._path(), json=self.data)
 
         if "rev" in resp:
             self.rev = resp["rev"]
@@ -82,18 +55,6 @@ class Document:
         return resp
 
     def update(self, fields: dict):
-        """
-        部分更新:
-        - 最新のドキュメントを取得
-        - 指定された fields をマージ
-        - save() で _rev を自動更新して PUT
-        """
-        # 最新状態を取得
         self.fetch()
-
-        # 差分をマージ
         self.data.update(fields)
-
-        # 保存（_rev 自動更新）
         return self.save()
-
