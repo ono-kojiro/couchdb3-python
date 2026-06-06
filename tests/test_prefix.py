@@ -1,7 +1,13 @@
 import pytest
+import os
+from dotenv import load_dotenv
 from couchdb3_python.client import Client
 
-API_KEY = "KEY_ABC123"
+# .env を読み込む
+load_dotenv()
+
+API_KEY = os.getenv("API_KEY")
+HEADERS = {"X-API-Key": API_KEY}
 
 
 @pytest.fixture
@@ -9,15 +15,12 @@ def client():
     return Client(
         base_url="https://localhost/couchdb",
         timeout=5.0,
-        verify=False,   # ← これが重要
+        verify=False,
     )
 
 
 def test_prefix_all_dbs(client):
-    resp = client.get(
-        "/_all_dbs",
-        headers={"X-API-Key": API_KEY},
-    )
+    resp = client.get("/_all_dbs", headers=HEADERS)
     assert isinstance(resp, list)
 
 
@@ -25,14 +28,14 @@ def test_prefix_create_db(client):
     dbname = "mydb"
 
     try:
-        client.delete(f"/{dbname}", headers={"X-API-Key": API_KEY})
+        client.delete(f"/{dbname}", headers=HEADERS)
     except Exception:
         pass
 
-    resp = client.put(f"/{dbname}", headers={"X-API-Key": API_KEY})
+    resp = client.put(f"/{dbname}", headers=HEADERS)
     assert resp["ok"] is True
 
-    dbs = client.get("/_all_dbs", headers={"X-API-Key": API_KEY})
+    dbs = client.get("/_all_dbs", headers=HEADERS)
     assert dbname in dbs
 
 
@@ -42,13 +45,10 @@ def test_prefix_put_and_get_doc(client):
     resp = client.post(
         f"/{dbname}",
         json={"hello": "world"},
-        headers={"X-API-Key": API_KEY},
+        headers=HEADERS,
     )
     assert resp["ok"] is True
     doc_id = resp["id"]
 
-    fetched = client.get(
-        f"/{dbname}/{doc_id}",
-        headers={"X-API-Key": API_KEY},
-    )
+    fetched = client.get(f"/{dbname}/{doc_id}", headers=HEADERS)
     assert fetched["hello"] == "world"
