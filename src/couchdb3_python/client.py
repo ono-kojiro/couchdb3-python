@@ -67,24 +67,7 @@ class Client:
             raise HTTPError(resp.status_code, resp.text, url=url)
         return resp
 
-    # ---------------------------
-    # POST（compact の特殊処理あり）
-    # ---------------------------
     def post(self, path: str, json=None, headers=None):
-        url = self.url(path)
-
-        # compact の場合は raw HTTP を送る
-        if path.endswith("/_compact") and json is None:
-            with httpcore.ConnectionPool() as pool:
-                method = b"POST"
-                hdrs = [] if headers is None else [(k.encode(), v.encode()) for k, v in headers.items()]
-                content = b""
-                _, _, resp = pool.request(method, url.encode(), hdrs, content)
-                status, hdrs, body = resp
-                response = httpx.Response(status, headers=dict(hdrs), content=body)
-                return self._handle_response(response, url)
-
-        # 通常の POST は request() に統一
         return self.request("POST", path, json=json, headers=headers)
 
     # ---------------------------
