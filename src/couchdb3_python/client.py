@@ -21,17 +21,17 @@ class Client:
     #    self._client = httpx.Client(timeout=timeout)
 
     def __init__(self, base_url: str, *, username: str | None = None,
-                 password: str | None = None, timeout: float = 5.0):
+                password: str | None = None, timeout: float = 5.0,
+                verify: bool = True):
 
         self.resolver = URLResolver(base_url)
         self.timeout = timeout
 
-        # 認証設定
         auth = None
         if username and password:
             auth = (username, password)
 
-        self._client = httpx.Client(timeout=timeout, auth=auth)
+        self._client = httpx.Client(timeout=timeout, auth=auth, verify=verify)
 
     def url(self, path: str) -> str:
         return self.resolver.resolve(path)
@@ -40,19 +40,19 @@ class Client:
     # 基本 HTTP メソッド
     # ---------------------------
 
-    def get(self, path: str, params=None):
+    def get(self, path: str, params=None, headers=None):
         url = self.url(path)
-        resp = self._client.get(url, params=params)
+        resp = self._client.get(url, params=params, headers=headers)
         return self._handle_response(resp, url)
 
-    def put(self, path: str, json=None):
+    def put(self, path: str, json=None, headers=None):
         url = self.url(path)
-        resp = self._client.put(url, json=json)
+        resp = self._client.put(url, json=json, headers=headers)
         return self._handle_response(resp, url)
 
-    def delete(self, path: str):
+    def delete(self, path: str, headers=None):
         url = self.url(path)
-        resp = self._client.delete(url)
+        resp = self._client.delete(url, headers=headers)
         return self._handle_response(resp, url)
 
     def head(self, path: str):
@@ -107,43 +107,24 @@ class Client:
 
         return resp.text
 
-
-    def post(self, path: str, json=None):
-        url = self.url(path)
-
-        if path.endswith("/_compact") and json is None:
-            resp = self._client.post(url, files={})
-            return self._handle_response(resp, url)
-
-        if json is None:
-            resp = self._client.post(url, content=b"")
-        else:
-            resp = self._client.post(url, json=json)
-
-        return self._handle_response(resp, url)
-
-
-    def post(self, path: str, json=None):
+    def post(self, path: str, json=None, headers=None):
         url = self.url(path)
 
         # compact の場合は raw HTTP を送る
         if path.endswith("/_compact") and json is None:
-            # httpcore を直接使う
             with httpcore.ConnectionPool() as pool:
                 method = b"POST"
-                headers = []  # ← Content-Type を付けない
-                content = b""  # ← 空ボディ
-                _, _, resp = pool.request(method, url.encode(), headers, content)
-                status, headers, body = resp
-                # httpx.Response に変換
-                response = httpx.Response(status, headers=dict(headers), content=body)
+                hdrs = [] if headers is None else [(k.encode(), v.encode()) for k, v in headers.items()]
+                content = b""
+                _, _, resp = pool.request(method, url.encode(), hdrs, content)
+                status, hdrs, body = resp
+                response = httpx.Response(status, headers=dict(hdrs), content=body)
                 return self._handle_response(response, url)
 
         # 通常の POST
         if json is None:
-            resp = self._client.post(url, content=b"")
+            resp = self._client.post(url, content=b"", headers=headers)
         else:
-            resp = self._client.post(url, json=json)
+            resp = self._client.post(url, json=json, headers=headers)
 
         return self._handle_response(resp, url)
-
